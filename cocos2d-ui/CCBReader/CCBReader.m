@@ -878,6 +878,7 @@ static inline float readFloat(CCBReader *self)
         
         CCNode* embeddedNode = ccbFileNode.ccbFile;
         embeddedNode.position = ccbFileNode.position;
+        embeddedNode.positionType = ccbFileNode.positionType;
         //embeddedNode.anchorPoint = ccbFileNode.anchorPoint;
         embeddedNode.rotation = ccbFileNode.rotation;
         embeddedNode.scale = ccbFileNode.scale;
@@ -919,10 +920,11 @@ static inline float readFloat(CCBReader *self)
     BOOL hasPhysicsBody = readBool(self);
     if (hasPhysicsBody)
     {
-        // Read body shape
+#ifdef __CC_PLATFORM_IOS
+			// Read body shape
         int bodyShape = readIntWithSign(self, NO);
         float cornerRadius = readFloat(self);
-        
+#endif
         // Read points
         int numPoints = readIntWithSign(self, NO);
         CGPoint* points = malloc(sizeof(CGPoint)*numPoints);

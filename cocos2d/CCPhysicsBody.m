@@ -29,10 +29,6 @@
 #import "CCPhysics+ObjectiveChipmunk.h"
 
 
-// TODO temporary
-static inline void NYI(){@throw @"Not Yet Implemented";}
-
-
 #define FOREACH_SHAPE(__body__, __shapeVar__) for(CCPhysicsShape *__shapeVar__ = __body__->_shapeList; __shapeVar__; __shapeVar__ = __shapeVar__.next)
 
 
@@ -114,7 +110,7 @@ static inline void NYI(){@throw @"Not Yet Implemented";}
 	
 	CCPhysicsShape *shapes = nil;
 	
-	int limit = (looped ? count : count - 1);
+	NSUInteger limit = (looped ? count : count - 1);
 	for(int i=0; i<limit; i++){
 		CCPhysicsShape *shape = [CCPhysicsShape pillShapeFrom:points[i] to:points[(i + 1)%count] cornerRadius:cornerRadius];
 		// TODO Broken. Values may be wrong after applying a transform in onEnter.
@@ -133,7 +129,7 @@ static inline void NYI(){@throw @"Not Yet Implemented";}
 +(CCPhysicsBody *)bodyWithShapes:(NSArray *)shapes
 {
 	CCPhysicsShape *shapeList = nil;
-	for(int i=0, count=shapes.count; i<count; i++){
+	for(NSUInteger i=0, count=shapes.count; i<count; i++){
 		CCPhysicsShape *shape = shapes[i];
 		shape.next = shapeList;
 		shapeList = shape;
@@ -242,8 +238,8 @@ NotAffectedByGravity
 	}
 }
 
-static CCPhysicsBodyType ToCocosBodyType[] = {CCPhysicsBodyTypeDynamic, CCPhysicsBodyTypeKinematic, CCPhysicsBodyTypeStatic};
-static cpBodyType ToChipmunkBodyType[] = {CP_BODY_TYPE_DYNAMIC, CP_BODY_TYPE_KINEMATIC, CP_BODY_TYPE_STATIC};
+static CCPhysicsBodyType ToCocosBodyType[] = {CCPhysicsBodyTypeDynamic, CCPhysicsBodyTypeStatic, CCPhysicsBodyTypeStatic};
+static cpBodyType ToChipmunkBodyType[] = {CP_BODY_TYPE_DYNAMIC, /*CP_BODY_TYPE_KINEMATIC,*/ CP_BODY_TYPE_STATIC};
 
 -(CCPhysicsBodyType)type {return ToCocosBodyType[_body.type];}
 -(void)setType:(CCPhysicsBodyType)type {_body.type = ToChipmunkBodyType[type];}
@@ -337,10 +333,25 @@ static cpBodyType ToChipmunkBodyType[] = {CP_BODY_TYPE_DYNAMIC, CP_BODY_TYPE_KIN
 -(void)setNode:(CCNode *)node {_node = node;}
 
 -(cpVect)absolutePosition {return _body.position;}
--(void)setAbsolutePosition:(cpVect)absolutePosition {_body.position = absolutePosition;}
+-(void)setAbsolutePosition:(cpVect)absolutePosition
+{
+	_body.position = absolutePosition;
+	
+	if(_body.type == CP_BODY_TYPE_STATIC){
+		// Need to force Chipmunk to update the spatial indexes for a static body.
+		[_body.space reindexShapesForBody:_body];
+	}
+}
 
 -(cpFloat)absoluteRadians {return _body.angle;}
--(void)setAbsoluteRadians:(cpFloat)absoluteRadians {_body.angle = absoluteRadians;}
+-(void)setAbsoluteRadians:(cpFloat)absoluteRadians {
+	_body.angle = absoluteRadians;
+	
+	if(_body.type == CP_BODY_TYPE_STATIC){
+		// Need to force Chipmunk to update the spatial indexes for a static body.
+		[_body.space reindexShapesForBody:_body];
+	}
+}
 
 -(cpTransform)absoluteTransform {return _body.transform;}
 
